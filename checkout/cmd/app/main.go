@@ -2,20 +2,18 @@ package main
 
 import (
 	"log"
-	"net/http"
+	"net"
 )
 
 import (
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
+	checkoutV1 "route256/checkout/internal/api/checkout_v1"
 	AppConfig "route256/checkout/internal/config"
 	"route256/checkout/internal/domain"
-	"route256/checkout/internal/handlers/addToCart"
-	"route256/checkout/internal/handlers/deleteFromCart"
-	"route256/checkout/internal/handlers/listCart"
-	"route256/checkout/internal/handlers/purchase"
+	desc "route256/checkout/pkg/checkout_v1"
 	"route256/libs/config"
-	"route256/libs/httpServerWrapper"
-	"route256/libs/lomsClient"
-	"route256/libs/productServiceClient"
 )
 
 func main() {
@@ -25,30 +23,33 @@ func main() {
 		log.Fatal("config init", err)
 	}
 
-	lomsClient := lomsClient.New(
-		lomsClient.NewConfig(
-			configApp.Loms.Url,
-		))
+	lis, err := net.Listen("tcp", ":"+configApp.App.Port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
 
-	prodServClient := productServiceClient.New(
-		productServiceClient.NewConfig(
-			configApp.ProductService.Url,
-			configApp.ProductService.Token,
-		))
+	server := grpc.NewServer()
 
-	domain := domain.New(lomsClient, prodServClient)
+	lomsCon, err := grpc.Dial(configApp.Loms.Url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal("Error create connection to loms", err)
+	}
+	defer lomsCon.Close()
 
-	addToCartHandler := addToCart.New(domain)
-	listCartHandler := listCart.New(domain)
-	purchaseHandler := purchase.New(domain)
-	deleteFromCartHandler := deleteFromCart.New(domain)
+	productServiceCon, err := grpc.Dial(configApp.ProductService.Url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal("Error create connection to productService", err)
+	}
+	defer productServiceCon.Close()
 
-	http.Handle("/addToCart", httpServerWrapper.New(addToCartHandler.Handle))
-	http.Handle("/listCart", httpServerWrapper.New(listCartHandler.Handle))
-	http.Handle("/purchase", httpServerWrapper.New(purchaseHandler.Handle))
-	http.Handle("/deleteFromCart", httpServerWrapper.New(deleteFromCartHandler.Handle))
+	domain := domain.New(lomsCon, productServiceCon, configApp.ProductService.Token)
 
-	log.Println("Listening HTTP at", configApp.App.Port)
-	err = http.ListenAndServe(":"+configApp.App.Port, nil)
-	log.Fatal("Error listen HTTP", err)
+	reflection.Register(server)
+	desc.RegisterCheckoutV1Server(server, checkoutV1.New(domain))
+
+	log.Printf("server listening at %v", lis.Addr())
+
+	if err = server.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }

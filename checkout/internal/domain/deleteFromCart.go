@@ -1,6 +1,8 @@
 package domain
 
-func (*Domain) DeleteFromCart(user int64, sku uint32, count uint16) error {
+import "context"
+
+func (*domain) DeleteFromCart(ctx context.Context, itemInfo ItemInfo) error {
 	// Fixture
 	return nil
 }

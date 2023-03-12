@@ -1,6 +1,8 @@
 package domain
 
-func (d *Domain) OrderPayedMark(orderID int64) error {
+import "context"
+
+func (d *domain) OrderPayedMark(ctx context.Context, orderID int64) error {
 	// Fixture
 	return nil
 }
