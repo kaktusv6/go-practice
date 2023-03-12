@@ -1,37 +1,36 @@
 package domain
 
 import (
-	"route256/libs/lomsClient"
-	"route256/libs/productServiceClient"
+	"context"
 )
 
-type CartItemAdder interface {
-	AddToCart(user int64, sku uint32, count uint16) error
+import (
+	"google.golang.org/grpc"
+	productServiceV1Clinet "route256/checkout/pkg/product_service_v1"
+	lomsV1Clinet "route256/loms/pkg/loms_v1"
+)
+
+type Domain interface {
+	AddToCart(ctx context.Context, itemInfo ItemInfo) error
+	GetListItems(ctx context.Context, user int64) (Cart, error)
+	DeleteFromCart(ctx context.Context, itemInfo ItemInfo) error
+	Purchase(ctx context.Context, user int64) error
 }
 
-type CartListItemGetter interface {
-	GetListItems(user int64) (Cart, error)
-}
-
-type CartItemDeleting interface {
-	DeleteFromCart(user int64, sku uint32, count uint16) error
-}
-
-type PurchaseMaker interface {
-	Purchase(user int64) error
-}
-
-type Domain struct {
-	lomsClient           lomsClient.Client
-	productServiceClient productServiceClient.Client
+type domain struct {
+	lomsClient           lomsV1Clinet.LomsV1Client
+	productServiceClient productServiceV1Clinet.ProductServiceClient
+	productServiceToken  string
 }
 
 func New(
-	lomsClient lomsClient.Client,
-	productServiceClient productServiceClient.Client,
-) *Domain {
-	return &Domain{
-		lomsClient,
-		productServiceClient,
+	lomsConnection *grpc.ClientConn,
+	productServiceConnection *grpc.ClientConn,
+	productServiceToken string,
+) Domain {
+	return &domain{
+		lomsV1Clinet.NewLomsV1Client(lomsConnection),
+		productServiceV1Clinet.NewProductServiceClient(productServiceConnection),
+		productServiceToken,
 	}
 }

@@ -1,23 +1,13 @@
 package domain
 
-type OrderCreator interface {
-	CreateOrder(user int64, items []Item) (int64, error)
-}
+import "context"
 
-type ListOrderGetter interface {
-	GetListOrder(orderID int64) (Order, error)
-}
-
-type OrderPayedMarker interface {
-	OrderPayedMark(orderID int64) error
-}
-
-type StocksGetter interface {
-	GetStocksBySKU(sku uint32) ([]Stock, error)
-}
-
-type OrderCanceling interface {
-	CancelOrder(orderID int64) error
+type Domain interface {
+	CreateOrder(ctx context.Context, user int64, items []Item) (int64, error)
+	GetListOrder(ctx context.Context, orderID int64) (Order, error)
+	OrderPayedMark(ctx context.Context, orderID int64) error
+	GetStocksBySKU(ctx context.Context, sku uint32) ([]Stock, error)
+	CancelOrder(ctx context.Context, orderID int64) error
 }
 
 const (
@@ -28,25 +18,9 @@ const (
 	Cancelled       = "cancelled"
 )
 
-type Item struct {
-	Sku   uint32 `json:"sku"`
-	Count uint16 `json:"count"`
+type domain struct {
 }
 
-type Order struct {
-	Status string `json:"status"`
-	User   int64  `json:"user"`
-	Items  []Item `json:"items"`
-}
-
-type Stock struct {
-	WarehouseID int64  `json:"warehouseID"`
-	Count       uint64 `json:"count"`
-}
-
-type Domain struct {
-}
-
-func NewDomain() *Domain {
-	return &Domain{}
+func NewDomain() Domain {
+	return &domain{}
 }

@@ -1,6 +1,8 @@
 package domain
 
-func (d *Domain) GetStocksBySKU(sku uint32) ([]Stock, error) {
+import "context"
+
+func (d *domain) GetStocksBySKU(ctx context.Context, sku uint32) ([]Stock, error) {
 	// Fixture
 	return []Stock{
 		{

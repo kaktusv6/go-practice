@@ -1,6 +1,8 @@
 package domain
 
-func (d *Domain) GetListOrder(orderID int64) (Order, error) {
+import "context"
+
+func (d *domain) GetListOrder(ctx context.Context, orderID int64) (Order, error) {
 	// Fixture
 	return Order{
 		New,

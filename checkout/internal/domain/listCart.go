@@ -1,13 +1,12 @@
 package domain
 
-import "route256/libs/productServiceClient"
+import (
+	"context"
+)
 
-type Item struct {
-	Sku   uint32 `json:"sku"`
-	Count uint16 `json:"count"`
-	Name  string `json:"name"`
-	Price uint32 `json:"price"`
-}
+import (
+	productServiceV1Clinet "route256/checkout/pkg/product_service_v1"
+)
 
 type Cart struct {
 	Items      []Item `json:"items"`
@@ -22,7 +21,14 @@ func (c *Cart) calculateTotalPrice() {
 	c.TotalPrice = result
 }
 
-func (d *Domain) GetListItems(user int64) (Cart, error) {
+type Item struct {
+	Sku   uint32 `json:"sku"`
+	Count uint16 `json:"count"`
+	Name  string `json:"name"`
+	Price uint32 `json:"price"`
+}
+
+func (d *domain) GetListItems(ctx context.Context, user int64) (Cart, error) {
 	skuItems := []uint32{
 		1076963,
 		1148162,
@@ -36,9 +42,12 @@ func (d *Domain) GetListItems(user int64) (Cart, error) {
 	}
 
 	cart := Cart{}
-	products := map[uint32]productServiceClient.Product{}
+	products := map[uint32]*productServiceV1Clinet.GetProductResponse{}
 	for _, sku := range skuItems {
-		product, err := d.productServiceClient.GetProduct(sku)
+		product, err := d.productServiceClient.GetProduct(ctx, &productServiceV1Clinet.GetProductRequest{
+			Token: d.productServiceToken,
+			Sku:   sku,
+		})
 		if err != nil {
 			return cart, err
 		}
@@ -48,10 +57,10 @@ func (d *Domain) GetListItems(user int64) (Cart, error) {
 	items := make([]Item, 0, len(products))
 	for sku, product := range products {
 		item := Item{
-			sku,
-			skuCounts[sku],
-			product.Name,
-			product.Price,
+			Sku:   sku,
+			Count: skuCounts[sku],
+			Name:  product.GetName(),
+			Price: product.GetPrice(),
 		}
 		items = append(items, item)
 	}
