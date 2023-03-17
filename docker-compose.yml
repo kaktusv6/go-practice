@@ -1,18 +1,86 @@
-version: "3.1"
+version: "3.8"
+
 services:
   checkout:
     image: checkout
     build: ./checkout/
     ports:
-      - "50051:50051"
+      - 50051:50051
+    depends_on:
+      - postgres-checkout
+    links:
+      - postgres-checkout
+    networks:
+      - net
   loms:
     image: loms
     build: ./loms/
     ports:
-      - "50052:50052"
+      - 50052:50052
+    depends_on:
+      - postgres-loms
+    links:
+      - postgres-loms
+    networks:
+      - net
+  postgres-loms:
+    image: postgres:15.1
+    environment:
+      POSTGRES_DB: loms
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    container_name: 'postgres-loms'
+    volumes:
+      - ./db/loms:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d loms" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+    networks:
+      - net
+  postgres-checkout:
+    image: postgres:15.1
+    environment:
+      POSTGRES_DB: checkout
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    container_name: 'postgres-checkout'
+    volumes:
+      - ./db/checkout:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d checkout" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+    networks:
+      - net
 
   # notification:
   #   image: notification
   #   build: ./notification
   #   ports:
   #     - "8082:8082"
+
+networks:
+  net:

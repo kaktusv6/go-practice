@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"github.com/pkg/errors"
 )
 
 import (
@@ -9,16 +10,26 @@ import (
 )
 
 func (d *domain) Purchase(ctx context.Context, user int64) error {
-	// Fixture
-	fixtureItems := []*lomsV1Client.ItemInfo{
-		{Sku: 1076963, Count: 1},
-		{Sku: 1148162, Count: 4},
-		{Sku: 1625903, Count: 2},
+	userCartItems, err := d.cartItemRepository.GetUserCartItems(ctx, user)
+	if err != nil {
+		return err
 	}
 
-	_, err := d.lomsClient.CreateOrder(ctx, &lomsV1Client.OrderDataRequest{
+	if len(userCartItems) == 0 {
+		return errors.New("user cart is empty")
+	}
+
+	itemInfoList := make([]*lomsV1Client.ItemInfo, 0, len(userCartItems))
+	for _, cartItem := range userCartItems {
+		itemInfoList = append(itemInfoList, &lomsV1Client.ItemInfo{
+			Sku:   cartItem.Sku,
+			Count: int32(cartItem.Count),
+		})
+	}
+
+	_, err = d.lomsClient.CreateOrder(ctx, &lomsV1Client.OrderDataRequest{
 		User:  user,
-		Items: fixtureItems,
+		Items: itemInfoList,
 	})
 
 	return err
