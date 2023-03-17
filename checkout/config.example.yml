@@ -7,3 +7,10 @@ product_service:
 
 loms:
   url: loms:50052
+
+database:
+  host: localhost
+  port: 5433
+  user: user
+  password: password
+  name: checkout

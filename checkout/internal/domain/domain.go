@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"route256/libs/transactor"
 )
 
 import (
@@ -11,9 +12,9 @@ import (
 )
 
 type Domain interface {
-	AddToCart(ctx context.Context, itemInfo ItemInfo) error
-	GetListItems(ctx context.Context, user int64) (Cart, error)
-	DeleteFromCart(ctx context.Context, itemInfo ItemInfo) error
+	AddToCart(ctx context.Context, itemInfo CartItem) error
+	GetListItems(ctx context.Context, user int64) (*Cart, error)
+	DeleteFromCart(ctx context.Context, itemInfo CartItem) error
 	Purchase(ctx context.Context, user int64) error
 }
 
@@ -21,16 +22,22 @@ type domain struct {
 	lomsClient           lomsV1Clinet.LomsV1Client
 	productServiceClient productServiceV1Clinet.ProductServiceClient
 	productServiceToken  string
+	transactionManager   *transactor.TransactionManager
+	cartItemRepository   CartItemRepository
 }
 
 func New(
 	lomsConnection *grpc.ClientConn,
 	productServiceConnection *grpc.ClientConn,
 	productServiceToken string,
+	transactionManager *transactor.TransactionManager,
+	cartItemRepository CartItemRepository,
 ) Domain {
 	return &domain{
 		lomsV1Clinet.NewLomsV1Client(lomsConnection),
 		productServiceV1Clinet.NewProductServiceClient(productServiceConnection),
 		productServiceToken,
+		transactionManager,
+		cartItemRepository,
 	}
 }

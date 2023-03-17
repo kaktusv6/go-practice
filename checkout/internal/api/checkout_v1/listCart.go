@@ -19,8 +19,8 @@ func (i *Implementation) ListCart(ctx context.Context, userInfo *desc.UserInfo) 
 		items = append(items, &desc.CartItem{
 			Sku:   item.Sku,
 			Count: int32(item.Count),
-			Name:  item.Name,
-			Price: item.Price,
+			Name:  item.Product.Name,
+			Price: item.Product.Price,
 		})
 	}
 

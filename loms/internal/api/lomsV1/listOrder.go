@@ -14,14 +14,18 @@ func (i *Implementation) ListOrder(ctx context.Context, req *desc.OrderID) (*des
 		return nil, err
 	}
 	items := make([]*desc.ItemInfo, 0, len(order.Items))
+
 	for _, item := range order.Items {
 		items = append(items, &desc.ItemInfo{
 			Sku:   item.Sku,
 			Count: int32(item.Count),
 		})
 	}
+
+	status := desc.Status(desc.Status_value[order.Status])
+
 	return &desc.OrderResponse{
-		Status: desc.Status(desc.Status_value[order.Status]),
+		Status: status,
 		User:   order.User,
 		Items:  items,
 	}, nil

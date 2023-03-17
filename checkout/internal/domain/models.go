@@ -1,7 +1,26 @@
 package domain
 
-type ItemInfo struct {
-	User  int64
-	Sku   uint32
-	Count uint16
+type Cart struct {
+	Items      []*CartItem
+	TotalPrice uint32
+}
+
+func (c *Cart) calculateTotalPrice() {
+	var result uint32 = 0
+	for _, item := range c.Items {
+		result += item.Product.Price
+	}
+	c.TotalPrice = result
+}
+
+type CartItem struct {
+	User    int64
+	Sku     uint32
+	Count   uint16
+	Product *ProductInfo
+}
+
+type ProductInfo struct {
+	Name  string
+	Price uint32
 }
