@@ -1,5 +1,7 @@
 package repositories
 
+import "time"
+
 type Stock struct {
 	Sku         uint32 `db:"sku"`
 	WarehouseID int64  `db:"warehouse_id"`
@@ -7,9 +9,11 @@ type Stock struct {
 }
 
 type Order struct {
-	ID     int64  `db:"id"`
-	Status string `db:"status"`
-	User   int64  `db:"user_id"`
+	ID        int64      `db:"id"`
+	Status    string     `db:"status"`
+	User      int64      `db:"user_id"`
+	CreatedAt *time.Time `db:"created_at"`
+	UpdatedAt *time.Time `db:"updated_at"`
 }
 
 type OrderItem struct {

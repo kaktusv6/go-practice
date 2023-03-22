@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	ErrorOrderAlreadyPayed = errors.New("order already mark as payed")
-	ErrorOrderIsCanceled   = errors.New("order is canceled")
-	ErrorOrderIsFailed     = errors.New("order is failed")
-	ErrorNotEnoughItems    = errors.New("Not enough item")
+	ErrorOrderIsPayed    = errors.New("order already mark as payed")
+	ErrorOrderIsCanceled = errors.New("order is canceled")
+	ErrorOrderIsFailed   = errors.New("order is failed")
+	ErrorNotEnoughItems  = errors.New("Not enough item")
 )
 
 func (d *domain) OrderPayedMark(ctx context.Context, orderID int64) error {
@@ -23,7 +23,7 @@ func (d *domain) OrderPayedMark(ctx context.Context, orderID int64) error {
 
 	// Не обрабатываем оплаченные заказы
 	if order.Status == Payed {
-		return ErrorOrderAlreadyPayed
+		return ErrorOrderIsPayed
 	}
 
 	// Не обрабатываем отмененные заказы

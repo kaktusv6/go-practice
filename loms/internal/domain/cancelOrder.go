@@ -4,14 +4,6 @@ import (
 	"context"
 )
 
-import (
-	"github.com/pkg/errors"
-)
-
-var (
-	ErrorOrderAlreadyCanceled = errors.New("order already mark as cancelled")
-)
-
 func (d *domain) CancelOrder(ctx context.Context, orderID int64) error {
 	order, err := d.GetListOrder(ctx, orderID)
 	if err != nil {
@@ -19,7 +11,7 @@ func (d *domain) CancelOrder(ctx context.Context, orderID int64) error {
 	}
 
 	if order.Status == Cancelled {
-		return ErrorOrderAlreadyCanceled
+		return ErrorOrderIsCanceled
 	}
 
 	if order.Status == Failed {
@@ -27,7 +19,7 @@ func (d *domain) CancelOrder(ctx context.Context, orderID int64) error {
 	}
 
 	err = d.transactionManager.RunRepeatableReade(ctx, func(ctxTx context.Context) error {
-		isRevertStocks := order.Status == Payed || order.Status == AwaitingPayment
+		isRevertStocks := order.Status == Payed
 		order.Status = Cancelled
 
 		err = d.orderRepository.Update(ctxTx, order)
@@ -36,16 +28,9 @@ func (d *domain) CancelOrder(ctx context.Context, orderID int64) error {
 		}
 
 		if isRevertStocks {
-			orderItemStocks, err := d.orderItemStockRepository.GetListByOrderID(ctxTx, order.ID)
+			err = d.revertOrderItemsToWarehouses(ctxTx, order)
 			if err != nil {
 				return err
-			}
-
-			for _, orderItemStock := range orderItemStocks {
-				err = d.revertOrderItem(ctxTx, orderItemStock)
-				if err != nil {
-					return err
-				}
 			}
 		}
 		return nil
@@ -58,21 +43,28 @@ func (d *domain) CancelOrder(ctx context.Context, orderID int64) error {
 	return nil
 }
 
-func (d *domain) revertOrderItem(ctx context.Context, orderItemStock OrderItemStock) error {
-	stock, err := d.stockRepository.GetByWarehouseIDAndSku(ctx, orderItemStock.WarehouseID, orderItemStock.Sku)
+func (d *domain) revertOrderItemsToWarehouses(ctx context.Context, order *Order) error {
+	orderItemStocks, err := d.orderItemStockRepository.GetListByOrderID(ctx, order.ID)
 	if err != nil {
 		return err
 	}
 
-	stock.Count = stock.Count + orderItemStock.Count
-	err = d.stockRepository.UpdateCount(ctx, stock)
-	if err != nil {
-		return err
-	}
+	for _, orderItemStock := range orderItemStocks {
+		stock, err := d.stockRepository.GetByWarehouseIDAndSku(ctx, orderItemStock.WarehouseID, orderItemStock.Sku)
+		if err != nil {
+			return err
+		}
 
-	err = d.orderItemStockRepository.Delete(ctx, &orderItemStock)
-	if err != nil {
-		return err
+		stock.Count = stock.Count + orderItemStock.Count
+		err = d.stockRepository.UpdateCount(ctx, stock)
+		if err != nil {
+			return err
+		}
+
+		err = d.orderItemStockRepository.Delete(ctx, &orderItemStock)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -9,7 +9,7 @@ loms:
   url: loms:50052
 
 database:
-  host: localhost
+  host: postgres-checkout
   port: 5433
   user: user
   password: password

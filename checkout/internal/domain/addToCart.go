@@ -6,7 +6,6 @@ import (
 
 import (
 	"github.com/pkg/errors"
-	productServiceV1Clinet "route256/checkout/pkg/product_service_v1"
 	lomsV1Clinet "route256/loms/pkg/loms_v1"
 )
 
@@ -38,9 +37,12 @@ func (d *domain) AddToCart(ctx context.Context, cartItem CartItem) error {
 	isCreateCartItem := existCartItem == nil
 
 	if isCreateCartItem {
-		err = d.checkProductBySku(ctx, cartItem.Sku)
+		productInfo, err := d.productRepository.GetProductBySku(ctx, cartItem.Sku)
 		if err != nil {
 			return err
+		}
+		if productInfo == nil {
+			return ErrProductNotFound
 		}
 	} else {
 		existCartItem.Count = existCartItem.Count + cartItem.Count
@@ -56,20 +58,4 @@ func (d *domain) AddToCart(ctx context.Context, cartItem CartItem) error {
 	})
 
 	return err
-}
-
-func (d *domain) checkProductBySku(ctx context.Context, sku uint32) error {
-	productResponse, err := d.productServiceClient.GetProduct(ctx, &productServiceV1Clinet.GetProductRequest{
-		Token: d.productServiceToken,
-		Sku:   sku,
-	})
-	if err != nil {
-		return err
-	}
-
-	if productResponse == nil {
-		return ErrProductNotFound
-	}
-
-	return nil
 }

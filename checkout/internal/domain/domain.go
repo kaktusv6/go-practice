@@ -2,12 +2,11 @@ package domain
 
 import (
 	"context"
-	"route256/libs/transactor"
 )
 
 import (
 	"google.golang.org/grpc"
-	productServiceV1Clinet "route256/checkout/pkg/product_service_v1"
+	"route256/libs/transactor"
 	lomsV1Clinet "route256/loms/pkg/loms_v1"
 )
 
@@ -19,25 +18,22 @@ type Domain interface {
 }
 
 type domain struct {
-	lomsClient           lomsV1Clinet.LomsV1Client
-	productServiceClient productServiceV1Clinet.ProductServiceClient
-	productServiceToken  string
-	transactionManager   *transactor.TransactionManager
-	cartItemRepository   CartItemRepository
+	lomsClient         lomsV1Clinet.LomsV1Client
+	transactionManager *transactor.TransactionManager
+	cartItemRepository CartItemRepository
+	productRepository  ProductRepository
 }
 
 func New(
 	lomsConnection *grpc.ClientConn,
-	productServiceConnection *grpc.ClientConn,
-	productServiceToken string,
 	transactionManager *transactor.TransactionManager,
 	cartItemRepository CartItemRepository,
+	productRepository ProductRepository,
 ) Domain {
 	return &domain{
 		lomsV1Clinet.NewLomsV1Client(lomsConnection),
-		productServiceV1Clinet.NewProductServiceClient(productServiceConnection),
-		productServiceToken,
 		transactionManager,
 		cartItemRepository,
+		productRepository,
 	}
 }

@@ -12,6 +12,7 @@ type OrderRepository interface {
 	GetById(ctx context.Context, orderID int64) (*Order, error)
 	Save(ctx context.Context, order *Order) error
 	Update(ctx context.Context, order *Order) error
+	GetAll(ctx context.Context) ([]*Order, error)
 }
 
 type OrderItemRepository interface {

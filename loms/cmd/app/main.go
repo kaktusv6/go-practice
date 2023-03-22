@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/robfig/cron/v3"
 	"log"
 	"net"
+	"route256/loms/internal/scheduler/cron/jobs"
 )
 
 import (
@@ -24,6 +26,13 @@ import (
 import (
 	_ "github.com/lib/pq"
 )
+
+type Logger struct{}
+
+func (l *Logger) Printf(msg string, args ...interface{}) {
+	fmt.Printf(msg, args...)
+	fmt.Println()
+}
 
 func main() {
 	configApp := &AppConfig.Config{}
@@ -44,7 +53,7 @@ func main() {
 
 	ctx := context.Background()
 
-	// open database
+	// Create connect to db
 	db, err := sql.Open("postgres", psqlConn)
 	if err != nil {
 		log.Fatal(err)
@@ -61,6 +70,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Create repositories
 	provider := transactor.NewQueryEngineProvider(pool)
 
 	stockRepository := repositories.NewStockRepository(
@@ -76,6 +86,7 @@ func main() {
 		provider,
 	)
 
+	// Create domain
 	domain := domain.NewDomain(
 		provider,
 		stockRepository,
@@ -84,6 +95,17 @@ func main() {
 		orderItemStockRepository,
 	)
 
+	// CRON
+	logger := cron.VerbosePrintfLogger(&Logger{})
+	c := cron.New(
+		cron.WithLogger(logger),
+	)
+	defer c.Stop()
+
+	c.AddJob("* * * * *", jobs.NewOrdersChecker(domain, logger))
+	c.Start()
+
+	// Create tcp listener
 	lis, err := net.Listen("tcp", ":"+configApp.App.Port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -96,6 +118,7 @@ func main() {
 
 	log.Printf("server listening at %v", lis.Addr())
 
+	// Run server
 	if err = server.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

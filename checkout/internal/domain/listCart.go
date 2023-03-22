@@ -4,10 +4,6 @@ import (
 	"context"
 )
 
-import (
-	productServiceV1Clinet "route256/checkout/pkg/product_service_v1"
-)
-
 func (d *domain) GetListItems(ctx context.Context, user int64) (*Cart, error) {
 	userCartItems, err := d.cartItemRepository.GetUserCartItems(ctx, user)
 	if err != nil {
@@ -15,18 +11,15 @@ func (d *domain) GetListItems(ctx context.Context, user int64) (*Cart, error) {
 	}
 
 	cart := &Cart{}
-	for index, cartItem := range userCartItems {
-		product, err := d.productServiceClient.GetProduct(ctx, &productServiceV1Clinet.GetProductRequest{
-			Token: d.productServiceToken,
-			Sku:   cartItem.Sku,
-		})
-		if err != nil {
-			return cart, err
-		}
-		userCartItems[index].Product = &ProductInfo{
-			Name:  product.GetName(),
-			Price: product.GetPrice(),
-		}
+
+	skus := make([]uint32, 0, len(userCartItems))
+	for _, userCartItem := range userCartItems {
+		skus = append(skus, userCartItem.Sku)
+	}
+
+	productInfoList, _ := d.productRepository.GetListBySkus(ctx, skus)
+	for index, productInfo := range productInfoList {
+		userCartItems[index].Product = productInfo
 	}
 
 	cart.Items = userCartItems

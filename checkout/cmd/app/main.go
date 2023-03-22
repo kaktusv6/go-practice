@@ -4,22 +4,23 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"net"
-	"route256/checkout/internal/repositories"
-	"route256/libs/transactor"
 )
 
 import (
+	"github.com/jackc/pgx/v4/pgxpool"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	checkoutV1 "route256/checkout/internal/api/checkout_v1"
 	AppConfig "route256/checkout/internal/config"
 	"route256/checkout/internal/domain"
+	"route256/checkout/internal/repositories"
 	desc "route256/checkout/pkg/checkout_v1"
+	productServiceV1Clinet "route256/checkout/pkg/product_service_v1"
 	"route256/libs/config"
+	"route256/libs/transactor"
 )
 
 import (
@@ -84,12 +85,16 @@ func main() {
 	provider := transactor.NewQueryEngineProvider(pool)
 	cartItemRepository := repositories.NewOrderItemRepository(provider)
 
+	productRepository := repositories.NewOrderProductRepository(
+		productServiceV1Clinet.NewProductServiceClient(productServiceCon),
+		configApp.ProductService.Token,
+	)
+
 	domain := domain.New(
 		lomsCon,
-		productServiceCon,
-		configApp.ProductService.Token,
 		provider,
 		cartItemRepository,
+		productRepository,
 	)
 
 	reflection.Register(server)
