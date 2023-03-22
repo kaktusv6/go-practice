@@ -2,10 +2,10 @@ package domain
 
 import (
 	"context"
-	"github.com/pkg/errors"
 )
 
 import (
+	"github.com/pkg/errors"
 	lomsV1Client "route256/loms/pkg/loms_v1"
 )
 

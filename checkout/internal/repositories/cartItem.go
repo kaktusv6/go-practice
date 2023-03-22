@@ -2,6 +2,9 @@ package repositories
 
 import (
 	"context"
+)
+
+import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4"

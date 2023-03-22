@@ -14,6 +14,8 @@ type Domain interface {
 	OrderPayedMark(ctx context.Context, orderID int64) error
 	GetStocksBySKU(ctx context.Context, sku uint32) ([]Stock, error)
 	CancelOrder(ctx context.Context, orderID int64) error
+	GetAll(ctx context.Context) ([]*Order, error)
+	FailOrder(ctx context.Context, order *Order) error
 }
 
 const (

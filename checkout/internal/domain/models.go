@@ -8,7 +8,7 @@ type Cart struct {
 func (c *Cart) calculateTotalPrice() {
 	var result uint32 = 0
 	for _, item := range c.Items {
-		result += item.Product.Price
+		result += item.Product.Price * uint32(item.Count)
 	}
 	c.TotalPrice = result
 }

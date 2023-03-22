@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"time"
 )
 
 import (
@@ -27,7 +28,7 @@ const (
 
 func (o *OrderRepository) GetById(ctx context.Context, orderID int64) (*domain.Order, error) {
 	sqQuery := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).
-		Select("id", "user_id", "status").
+		Select("id", "user_id", "status", "created_at", "updated_at").
 		From(orderTable).
 		Where("id = ?", orderID)
 
@@ -43,17 +44,16 @@ func (o *OrderRepository) GetById(ctx context.Context, orderID int64) (*domain.O
 		return nil, err
 	}
 
-	return &domain.Order{
-		ID:     order.ID,
-		Status: order.Status,
-		User:   order.User,
-	}, nil
+	return o.bindingTo(&order), nil
 }
 
 func (o *OrderRepository) Save(ctx context.Context, order *domain.Order) error {
-	sqQuery := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).Insert(orderTable).
-		Columns("user_id", "status").
-		Values(order.User, order.Status).
+	now := time.Now()
+
+	sqQuery := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).
+		Insert(orderTable).
+		Columns("user_id", "status", "created_at", "updated_at").
+		Values(order.User, order.Status, now, now).
 		Suffix("returning id")
 
 	rawQuery, args, err := sqQuery.ToSql()
@@ -77,6 +77,7 @@ func (o *OrderRepository) Update(ctx context.Context, order *domain.Order) error
 		Update(orderTable).
 		Set("status", order.Status).
 		Set("user_id", order.User).
+		Set("updated_at", time.Now()).
 		Where("id = ?", order.ID)
 
 	rawQuery, args, err := sqQuery.ToSql()
@@ -93,4 +94,39 @@ func (o *OrderRepository) Update(ctx context.Context, order *domain.Order) error
 	}
 
 	return nil
+}
+
+func (o *OrderRepository) GetAll(ctx context.Context) ([]*domain.Order, error) {
+	sqQuery := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).
+		Select("id", "user_id", "status", "created_at", "updated_at").
+		From(orderTable)
+
+	rawQuery, args, err := sqQuery.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	db := o.provider.GetQueryEngine(ctx)
+
+	var orders []Order
+	if err := pgxscan.Select(ctx, db, &orders, rawQuery, args...); err != nil {
+		return nil, err
+	}
+
+	result := make([]*domain.Order, 0, len(orders))
+	for _, order := range orders {
+		result = append(result, o.bindingTo(&order))
+	}
+
+	return result, nil
+}
+
+func (o *OrderRepository) bindingTo(order *Order) *domain.Order {
+	return &domain.Order{
+		ID:        order.ID,
+		Status:    order.Status,
+		User:      order.User,
+		CreatedAt: order.CreatedAt,
+		UpdatedAt: order.UpdatedAt,
+	}
 }
