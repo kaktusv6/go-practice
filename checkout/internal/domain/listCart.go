@@ -17,13 +17,16 @@ func (d *domain) GetListItems(ctx context.Context, user int64) (*Cart, error) {
 		skus = append(skus, userCartItem.Sku)
 	}
 
-	productInfoList, _ := d.productRepository.GetListBySkus(ctx, skus)
+	productInfoList, err := d.productRepository.GetListBySkus(ctx, skus)
+	if err != nil {
+		return nil, err
+	}
 	for index, productInfo := range productInfoList {
 		userCartItems[index].Product = productInfo
 	}
 
 	cart.Items = userCartItems
-	cart.calculateTotalPrice()
+	cart.CalculateTotalPrice()
 
 	return cart, nil
 }

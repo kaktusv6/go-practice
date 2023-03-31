@@ -2,24 +2,23 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"github.com/robfig/cron/v3"
 	"log"
 	"net"
-	"route256/loms/internal/scheduler/cron/jobs"
 )
 
 import (
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/robfig/cron/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"route256/libs/config"
-	"route256/libs/transactor"
+	"route256/libs/db"
+	"route256/libs/db/transaction"
 	"route256/loms/internal/api/lomsV1"
 	AppConfig "route256/loms/internal/config"
 	"route256/loms/internal/domain"
 	"route256/loms/internal/repositories"
+	"route256/loms/internal/scheduler/cron/jobs"
 	desc "route256/loms/pkg/loms_v1"
 )
 
@@ -41,54 +40,39 @@ func main() {
 		log.Fatal("config init", err)
 	}
 
-	// connection string
-	psqlConn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		configApp.DataBase.Host,
-		configApp.DataBase.Port,
-		configApp.DataBase.User,
-		configApp.DataBase.Password,
-		configApp.DataBase.Name,
-	)
-
 	ctx := context.Background()
 
-	// Create connect to db
-	db, err := sql.Open("postgres", psqlConn)
+	// Создание клиента для работы с DB
+	clientDb, err := db.NewClient(ctx, &db.Config{
+		Host:     configApp.DataBase.Host,
+		Port:     configApp.DataBase.Port,
+		User:     configApp.DataBase.User,
+		Password: configApp.DataBase.Password,
+		Name:     configApp.DataBase.Name,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer clientDb.Close()
 
-	pool, err := pgxpool.Connect(ctx, psqlConn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer pool.Close()
-
-	if err := pool.Ping(ctx); err != nil {
-		log.Fatal(err)
-	}
-
-	// Create repositories
-	provider := transactor.NewQueryEngineProvider(pool)
+	transactionManager := transaction.NewTransactionManager(clientDb.DB())
 
 	stockRepository := repositories.NewStockRepository(
-		provider,
+		transactionManager,
 	)
 	orderRepository := repositories.NewOrderRepository(
-		provider,
+		transactionManager,
 	)
 	orderItemRepository := repositories.NewOrderItemRepository(
-		provider,
+		transactionManager,
 	)
 	orderItemStockRepository := repositories.NewOrderItemStockRepository(
-		provider,
+		transactionManager,
 	)
 
 	// Create domain
 	domain := domain.NewDomain(
-		provider,
+		transactionManager,
 		stockRepository,
 		orderRepository,
 		orderItemRepository,

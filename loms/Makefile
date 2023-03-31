@@ -78,3 +78,9 @@ generate-win:
 	--go-grpc_out=pkg/loms_v1 --go-grpc_opt=paths=source_relative \
 	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc.exe \
 	api/loms/v1/loms.service.proto
+
+test-coverage:
+	go test ./tests/... -coverpkg=./... -coverprofile cover.out
+	go tool cover -html cover.out -o cover.html
+	grep -sqFx "coverage.out" .gitignore || echo "coverage.out" >> .gitignore
+	grep -sqFx "coverage.html" .gitignore || echo "coverage.html" >> .gitignore

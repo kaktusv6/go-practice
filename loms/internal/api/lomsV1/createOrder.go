@@ -10,15 +10,18 @@ import (
 )
 
 func (i *Implementation) CreateOrder(ctx context.Context, req *desc.OrderDataRequest) (*desc.OrderID, error) {
-	items := make([]domain.Item, 0, len(req.GetItems()))
+	items := make([]*domain.Item, 0, len(req.GetItems()))
 	for _, reqItem := range req.GetItems() {
-		items = append(items, domain.Item{
+		items = append(items, &domain.Item{
 			Sku:   reqItem.GetSku(),
 			Count: uint16(reqItem.GetCount()),
 		})
 	}
 
-	orderID, err := i.domain.CreateOrder(ctx, req.GetUser(), items)
+	orderID, err := i.domain.CreateOrder(ctx, &domain.Order{
+		User:  req.GetUser(),
+		Items: items,
+	})
 	if err != nil {
 		return nil, err
 	}

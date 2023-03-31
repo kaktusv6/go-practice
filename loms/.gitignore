@@ -1,3 +1,5 @@
 bin
 config.yml
 vendor-proto
+coverage.out
+coverage.html

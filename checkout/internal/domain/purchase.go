@@ -6,7 +6,10 @@ import (
 
 import (
 	"github.com/pkg/errors"
-	lomsV1Client "route256/loms/pkg/loms_v1"
+)
+
+var (
+	CartItemsEmptyError = errors.New("user cart is empty")
 )
 
 func (d *domain) Purchase(ctx context.Context, user int64) error {
@@ -16,21 +19,13 @@ func (d *domain) Purchase(ctx context.Context, user int64) error {
 	}
 
 	if len(userCartItems) == 0 {
-		return errors.New("user cart is empty")
+		return CartItemsEmptyError
 	}
 
-	itemInfoList := make([]*lomsV1Client.ItemInfo, 0, len(userCartItems))
-	for _, cartItem := range userCartItems {
-		itemInfoList = append(itemInfoList, &lomsV1Client.ItemInfo{
-			Sku:   cartItem.Sku,
-			Count: int32(cartItem.Count),
-		})
+	err = d.orderRepository.Create(ctx, user, userCartItems)
+	if err != nil {
+		return err
 	}
 
-	_, err = d.lomsClient.CreateOrder(ctx, &lomsV1Client.OrderDataRequest{
-		User:  user,
-		Items: itemInfoList,
-	})
-
-	return err
+	return nil
 }

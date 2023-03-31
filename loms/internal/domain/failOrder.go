@@ -25,7 +25,7 @@ func (d *domain) FailOrder(ctx context.Context, order *Order) error {
 		return ErrorOrderIsFailed
 	}
 
-	err := d.transactionManager.RunRepeatableReade(ctx, func(ctxTx context.Context) error {
+	err := d.manager.RepeatableRead(ctx, func(ctxTx context.Context) error {
 		isRevertStocks := order.Status == Payed
 
 		order.Status = Failed
