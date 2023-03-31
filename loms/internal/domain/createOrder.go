@@ -12,20 +12,19 @@ var (
 	ErrorEmptyItems = errors.New("items is empty")
 )
 
-func (d *domain) CreateOrder(ctx context.Context, user int64, items []Item) (int64, error) {
-	if len(items) == 0 {
+func (d *domain) CreateOrder(ctx context.Context, order *Order) (int64, error) {
+	if len(order.Items) == 0 {
 		return 0, ErrorEmptyItems
 	}
 
-	order := &Order{
-		User:   user,
-		Status: New,
-		Items:  items,
-	}
+	order.Status = New
 
-	err := d.transactionManager.RunRepeatableReade(ctx, func(ctxTx context.Context) error {
+	err := d.manager.RepeatableRead(ctx, func(ctxTx context.Context) error {
 		// Сохраняем заказ и его товары
 		err := d.saveOrder(ctxTx, order)
+		if err != nil {
+			return err
+		}
 
 		// Записываем резервирование товаров
 		isSuccessReserve := true
@@ -80,11 +79,11 @@ func (d *domain) saveOrder(ctx context.Context, order *Order) error {
 }
 
 // Метод резервирует товар заказа
-func (d *domain) reserveOrderItem(ctx context.Context, order *Order, item Item) error {
+func (d *domain) reserveOrderItem(ctx context.Context, order *Order, item *Item) error {
 	// Получаем остатки товара на всех складах
 	stocks, err := d.stockRepository.GetListBySKU(ctx, item.Sku)
 	if err != nil {
-		return errors.WithMessage(err, "Failed get stocks")
+		return err
 	}
 
 	// Кол-во товара которое надо разервировать

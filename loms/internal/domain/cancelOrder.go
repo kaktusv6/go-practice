@@ -4,12 +4,7 @@ import (
 	"context"
 )
 
-func (d *domain) CancelOrder(ctx context.Context, orderID int64) error {
-	order, err := d.GetListOrder(ctx, orderID)
-	if err != nil {
-		return err
-	}
-
+func (d *domain) CancelOrder(ctx context.Context, order *Order) error {
 	if order.Status == Cancelled {
 		return ErrorOrderIsCanceled
 	}
@@ -18,11 +13,11 @@ func (d *domain) CancelOrder(ctx context.Context, orderID int64) error {
 		return ErrorOrderIsFailed
 	}
 
-	err = d.transactionManager.RunRepeatableReade(ctx, func(ctxTx context.Context) error {
+	err := d.manager.RepeatableRead(ctx, func(ctxTx context.Context) error {
 		isRevertStocks := order.Status == Payed
 		order.Status = Cancelled
 
-		err = d.orderRepository.Update(ctxTx, order)
+		err := d.orderRepository.Update(ctxTx, order)
 		if err != nil {
 			return err
 		}
@@ -61,7 +56,7 @@ func (d *domain) revertOrderItemsToWarehouses(ctx context.Context, order *Order)
 			return err
 		}
 
-		err = d.orderItemStockRepository.Delete(ctx, &orderItemStock)
+		err = d.orderItemStockRepository.Delete(ctx, orderItemStock)
 		if err != nil {
 			return err
 		}

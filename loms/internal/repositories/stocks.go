@@ -7,15 +7,15 @@ import (
 import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
-	"route256/libs/transactor"
+	"route256/libs/db"
 	"route256/loms/internal/domain"
 )
 
 type StockRepository struct {
-	provider transactor.QueryEngineProvider
+	provider db.QueryEngineProvider
 }
 
-func NewStockRepository(provider transactor.QueryEngineProvider) domain.StockRepository {
+func NewStockRepository(provider db.QueryEngineProvider) domain.StockRepository {
 	return &StockRepository{
 		provider,
 	}
@@ -25,7 +25,7 @@ const (
 	stockTable = "stocks"
 )
 
-func (s *StockRepository) GetListBySKU(ctx context.Context, sku uint32) ([]domain.Stock, error) {
+func (s *StockRepository) GetListBySKU(ctx context.Context, sku uint32) ([]*domain.Stock, error) {
 	sqQuery := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).
 		Select("sku", "warehouse_id", "count").
 		From(stockTable).
@@ -43,9 +43,9 @@ func (s *StockRepository) GetListBySKU(ctx context.Context, sku uint32) ([]domai
 		return nil, err
 	}
 
-	result := make([]domain.Stock, 0, len(queryResult))
+	result := make([]*domain.Stock, 0, len(queryResult))
 	for _, stock := range queryResult {
-		result = append(result, domain.Stock{
+		result = append(result, &domain.Stock{
 			Sku:         stock.Sku,
 			WarehouseID: stock.WarehouseID,
 			Count:       stock.Count,

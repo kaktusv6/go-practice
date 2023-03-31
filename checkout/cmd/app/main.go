@@ -2,14 +2,11 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"log"
 	"net"
 )
 
 import (
-	"github.com/jackc/pgx/v4/pgxpool"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -20,7 +17,10 @@ import (
 	desc "route256/checkout/pkg/checkout_v1"
 	productServiceV1Clinet "route256/checkout/pkg/product_service_v1"
 	"route256/libs/config"
-	"route256/libs/transactor"
+
+	"route256/libs/db"
+	"route256/libs/db/transaction"
+	lomsV1Clinet "route256/loms/pkg/loms_v1"
 )
 
 import (
@@ -53,36 +53,23 @@ func main() {
 	}
 	defer productServiceCon.Close()
 
-	// connection string
-	psqlConn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		configApp.DataBase.Host,
-		configApp.DataBase.Port,
-		configApp.DataBase.User,
-		configApp.DataBase.Password,
-		configApp.DataBase.Name,
-	)
-
 	ctx := context.Background()
 
-	// open database
-	db, err := sql.Open("postgres", psqlConn)
+	// Создание клиента для работы с DB
+	clientDb, err := db.NewClient(ctx, &db.Config{
+		Host:     configApp.DataBase.Host,
+		Port:     configApp.DataBase.Port,
+		User:     configApp.DataBase.User,
+		Password: configApp.DataBase.Password,
+		Name:     configApp.DataBase.Name,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer clientDb.Close()
 
-	pool, err := pgxpool.Connect(ctx, psqlConn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer pool.Close()
+	provider := transaction.NewTransactionManager(clientDb.DB())
 
-	if err := pool.Ping(ctx); err != nil {
-		log.Fatal(err)
-	}
-
-	provider := transactor.NewQueryEngineProvider(pool)
 	cartItemRepository := repositories.NewOrderItemRepository(provider)
 
 	productRepository := repositories.NewOrderProductRepository(
@@ -90,8 +77,16 @@ func main() {
 		configApp.ProductService.Token,
 	)
 
+	stockRepository := repositories.NewStockRepository(
+		lomsV1Clinet.NewLomsV1Client(lomsCon),
+	)
+	orderRepository := repositories.NewOrderRepository(
+		lomsV1Clinet.NewLomsV1Client(lomsCon),
+	)
+
 	domain := domain.New(
-		lomsCon,
+		stockRepository,
+		orderRepository,
 		provider,
 		cartItemRepository,
 		productRepository,

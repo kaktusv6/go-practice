@@ -48,7 +48,7 @@ func (o *OrdersChecker) Run() {
 			Callback: func(order *domain.Order) *domain.Order {
 				o.logger.Info("Start checking for time payment", "orderId", order.ID)
 				isOrderStatusValid := order.Status == domain.AwaitingPayment
-				isOrderCreatedAtValid := now.Sub(*order.UpdatedAt) >= (10 * time.Minute)
+				isOrderCreatedAtValid := now.Sub(order.UpdatedAt) >= (10 * time.Minute)
 
 				if isOrderStatusValid && isOrderCreatedAtValid {
 					err = o.domain.FailOrder(ctx, order)

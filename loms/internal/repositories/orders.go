@@ -8,15 +8,15 @@ import (
 import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
-	"route256/libs/transactor"
+	"route256/libs/db"
 	"route256/loms/internal/domain"
 )
 
 type OrderRepository struct {
-	provider transactor.QueryEngineProvider
+	provider db.QueryEngineProvider
 }
 
-func NewOrderRepository(provider transactor.QueryEngineProvider) domain.OrderRepository {
+func NewOrderRepository(provider db.QueryEngineProvider) domain.OrderRepository {
 	return &OrderRepository{
 		provider,
 	}
@@ -126,7 +126,7 @@ func (o *OrderRepository) bindingTo(order *Order) *domain.Order {
 		ID:        order.ID,
 		Status:    order.Status,
 		User:      order.User,
-		CreatedAt: order.CreatedAt,
-		UpdatedAt: order.UpdatedAt,
+		CreatedAt: order.CreatedAt.Time,
+		UpdatedAt: order.UpdatedAt.Time,
 	}
 }

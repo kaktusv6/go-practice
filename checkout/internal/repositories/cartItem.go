@@ -10,14 +10,14 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/pkg/errors"
 	"route256/checkout/internal/domain"
-	"route256/libs/transactor"
+	dbLib "route256/libs/db"
 )
 
 type CartItemRepository struct {
-	provider transactor.QueryEngineProvider
+	provider dbLib.QueryEngineProvider
 }
 
-func NewOrderItemRepository(provider transactor.QueryEngineProvider) domain.CartItemRepository {
+func NewOrderItemRepository(provider dbLib.QueryEngineProvider) domain.CartItemRepository {
 	return &CartItemRepository{
 		provider: provider,
 	}

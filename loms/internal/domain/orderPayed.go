@@ -15,12 +15,7 @@ var (
 	ErrorNotEnoughItems  = errors.New("Not enough item")
 )
 
-func (d *domain) OrderPayedMark(ctx context.Context, orderID int64) error {
-	order, err := d.GetListOrder(ctx, orderID)
-	if err != nil {
-		return err
-	}
-
+func (d *domain) OrderPayedMark(ctx context.Context, order *Order) error {
 	// Не обрабатываем оплаченные заказы
 	if order.Status == Payed {
 		return ErrorOrderIsPayed
@@ -36,9 +31,9 @@ func (d *domain) OrderPayedMark(ctx context.Context, orderID int64) error {
 		return ErrorOrderIsFailed
 	}
 
-	err = d.transactionManager.RunRepeatableReade(ctx, func(ctxTx context.Context) error {
+	err := d.manager.RepeatableRead(ctx, func(ctxTx context.Context) error {
 		// Получаем резервации заказа
-		orderItemStocks, err := d.orderItemStockRepository.GetListByOrderID(ctxTx, orderID)
+		orderItemStocks, err := d.orderItemStockRepository.GetListByOrderID(ctxTx, order.ID)
 		if err != nil {
 			return err
 		}

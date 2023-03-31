@@ -2,18 +2,15 @@ package domain
 
 import (
 	"context"
-)
-
-import (
-	"route256/libs/transactor"
+	"route256/libs/db/transaction"
 )
 
 type Domain interface {
-	CreateOrder(ctx context.Context, user int64, items []Item) (int64, error)
+	CreateOrder(ctx context.Context, order *Order) (int64, error)
 	GetListOrder(ctx context.Context, orderID int64) (*Order, error)
-	OrderPayedMark(ctx context.Context, orderID int64) error
-	GetStocksBySKU(ctx context.Context, sku uint32) ([]Stock, error)
-	CancelOrder(ctx context.Context, orderID int64) error
+	OrderPayedMark(ctx context.Context, order *Order) error
+	GetStocksBySKU(ctx context.Context, sku uint32) ([]*Stock, error)
+	CancelOrder(ctx context.Context, order *Order) error
 	GetAll(ctx context.Context) ([]*Order, error)
 	FailOrder(ctx context.Context, order *Order) error
 }
@@ -27,7 +24,7 @@ const (
 )
 
 type domain struct {
-	transactionManager       *transactor.TransactionManager
+	manager                  transaction.Manager
 	stockRepository          StockRepository
 	orderRepository          OrderRepository
 	orderItemRepository      OrderItemRepository
@@ -35,14 +32,14 @@ type domain struct {
 }
 
 func NewDomain(
-	transactionManager *transactor.TransactionManager,
+	manager transaction.Manager,
 	stockRepository StockRepository,
 	orderRepository OrderRepository,
 	orderItemRepository OrderItemRepository,
 	orderItemStockRepository OrderItemStockRepository,
 ) Domain {
 	return &domain{
-		transactionManager:       transactionManager,
+		manager:                  manager,
 		stockRepository:          stockRepository,
 		orderRepository:          orderRepository,
 		orderItemRepository:      orderItemRepository,

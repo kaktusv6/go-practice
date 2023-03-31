@@ -11,7 +11,7 @@ import (
 )
 
 func (i *Implementation) DeleteFromCart(ctx context.Context, req *desc.ItemInfoRequest) (*emptypb.Empty, error) {
-	err := i.domain.DeleteFromCart(ctx, domain.CartItem{
+	err := i.domain.DeleteFromCart(ctx, &domain.CartItem{
 		User:  req.GetUser(),
 		Sku:   req.GetSku(),
 		Count: uint16(req.GetCount()),

@@ -6,7 +6,6 @@ import (
 
 import (
 	"github.com/pkg/errors"
-	lomsV1Clinet "route256/loms/pkg/loms_v1"
 )
 
 var (
@@ -14,20 +13,20 @@ var (
 	ErrProductNotFound    = errors.New("product not found by sku")
 )
 
-func (d *domain) AddToCart(ctx context.Context, cartItem CartItem) error {
+func (d *domain) AddToCart(ctx context.Context, cartItem *CartItem) error {
 	existCartItem, err := d.cartItemRepository.GetOne(ctx, cartItem.User, cartItem.Sku)
 	if err != nil {
 		return err
 	}
 
-	result, err := d.lomsClient.Stocks(ctx, &lomsV1Clinet.StocksRequest{Sku: cartItem.Sku})
+	stocks, err := d.stockRepository.GetListBySku(ctx, cartItem.Sku)
 	if err != nil {
-		return errors.WithMessage(err, "get stocks from loms")
+		return err
 	}
 
 	count := int64(cartItem.Count)
-	for _, stock := range result.GetStocks() {
-		count -= int64(stock.GetCount())
+	for _, stock := range stocks {
+		count -= int64(stock.Count)
 	}
 
 	if count > 0 {
@@ -48,9 +47,9 @@ func (d *domain) AddToCart(ctx context.Context, cartItem CartItem) error {
 		existCartItem.Count = existCartItem.Count + cartItem.Count
 	}
 
-	err = d.transactionManager.RunRepeatableReade(ctx, func(ctxTx context.Context) error {
+	err = d.transactionService.RepeatableRead(ctx, func(ctxTx context.Context) error {
 		if isCreateCartItem {
-			err = d.cartItemRepository.Create(ctxTx, &cartItem)
+			err = d.cartItemRepository.Create(ctxTx, cartItem)
 		} else {
 			err = d.cartItemRepository.Update(ctxTx, existCartItem)
 		}

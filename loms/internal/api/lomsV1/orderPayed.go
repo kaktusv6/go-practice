@@ -11,7 +11,12 @@ import (
 )
 
 func (i *Implementation) OrderPayed(ctx context.Context, req *desc.OrderID) (*emptypb.Empty, error) {
-	err := i.domain.OrderPayedMark(ctx, req.OrderId)
+	order, err := i.domain.GetListOrder(ctx, req.OrderId)
+	if err != nil {
+		return nil, err
+	}
+
+	err = i.domain.OrderPayedMark(ctx, order)
 	if err != nil {
 		return nil, err
 	}

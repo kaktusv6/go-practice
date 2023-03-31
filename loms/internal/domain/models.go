@@ -11,9 +11,9 @@ type Order struct {
 	ID        int64
 	Status    string
 	User      int64
-	CreatedAt *time.Time
-	UpdatedAt *time.Time
-	Items     []Item
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Items     []*Item
 }
 
 type Stock struct {

@@ -7,15 +7,15 @@ import (
 import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
-	"route256/libs/transactor"
+	"route256/libs/db"
 	"route256/loms/internal/domain"
 )
 
 type OrderItemStockRepository struct {
-	provider transactor.QueryEngineProvider
+	provider db.QueryEngineProvider
 }
 
-func NewOrderItemStockRepository(provider transactor.QueryEngineProvider) domain.OrderItemStockRepository {
+func NewOrderItemStockRepository(provider db.QueryEngineProvider) domain.OrderItemStockRepository {
 	return &OrderItemStockRepository{
 		provider,
 	}
@@ -50,7 +50,7 @@ func (o *OrderItemStockRepository) Save(ctx context.Context, orderItemStock *dom
 	return nil
 }
 
-func (o *OrderItemStockRepository) GetListByOrderID(ctx context.Context, orderID int64) ([]domain.OrderItemStock, error) {
+func (o *OrderItemStockRepository) GetListByOrderID(ctx context.Context, orderID int64) ([]*domain.OrderItemStock, error) {
 	sqQuery := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).
 		Select("order_id", "sku", "count", "warehouse_id").
 		From(orderItemStockTable).
@@ -68,9 +68,9 @@ func (o *OrderItemStockRepository) GetListByOrderID(ctx context.Context, orderID
 		return nil, err
 	}
 
-	result := make([]domain.OrderItemStock, 0, len(queryResult))
+	result := make([]*domain.OrderItemStock, 0, len(queryResult))
 	for _, orderItemStock := range queryResult {
-		result = append(result, domain.OrderItemStock{
+		result = append(result, &domain.OrderItemStock{
 			OrderId:     orderItemStock.OrderId,
 			Sku:         orderItemStock.Sku,
 			WarehouseID: orderItemStock.WarehouseID,

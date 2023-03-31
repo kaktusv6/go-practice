@@ -5,7 +5,7 @@ type Cart struct {
 	TotalPrice uint32
 }
 
-func (c *Cart) calculateTotalPrice() {
+func (c *Cart) CalculateTotalPrice() {
 	var result uint32 = 0
 	for _, item := range c.Items {
 		result += item.Product.Price * uint32(item.Count)
@@ -23,4 +23,9 @@ type CartItem struct {
 type ProductInfo struct {
 	Name  string
 	Price uint32
+}
+
+type Stock struct {
+	WarehouseID int64
+	Count       uint64
 }

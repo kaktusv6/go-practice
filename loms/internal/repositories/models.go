@@ -1,6 +1,8 @@
 package repositories
 
-import "time"
+import (
+	"github.com/lib/pq"
+)
 
 type Stock struct {
 	Sku         uint32 `db:"sku"`
@@ -9,11 +11,11 @@ type Stock struct {
 }
 
 type Order struct {
-	ID        int64      `db:"id"`
-	Status    string     `db:"status"`
-	User      int64      `db:"user_id"`
-	CreatedAt *time.Time `db:"created_at"`
-	UpdatedAt *time.Time `db:"updated_at"`
+	ID        int64       `db:"id"`
+	Status    string      `db:"status"`
+	User      int64       `db:"user_id"`
+	CreatedAt pq.NullTime `db:"created_at"`
+	UpdatedAt pq.NullTime `db:"updated_at"`
 }
 
 type OrderItem struct {
