@@ -66,5 +66,7 @@ func (c *client) bootstrap(ctx context.Context, config *Config) error {
 		return err
 	}
 
+	c.db = pool
+
 	return nil
 }

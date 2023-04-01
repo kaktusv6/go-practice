@@ -167,6 +167,7 @@ func TestListOrder(t *testing.T) {
 				testCase.orderRepositoryMock(mc),
 				testCase.orderItemRepositoryMock(mc),
 				testCase.orderItemStockRepositoryMock(mc),
+				nil,
 			)
 
 			res, err := d.GetListOrder(ctx, orderId)

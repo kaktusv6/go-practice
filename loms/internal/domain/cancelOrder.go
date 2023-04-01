@@ -30,7 +30,11 @@ func (d *domain) CancelOrder(ctx context.Context, order *Order) error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
+	err = d.orderStatusNotifier.Notify(order)
 	if err != nil {
 		return err
 	}

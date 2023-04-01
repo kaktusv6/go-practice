@@ -23,6 +23,13 @@ services:
       - postgres-loms
     networks:
       - net
+  notification:
+    image: notification
+    build: ./notifications/
+    networks:
+      - net
+
+  # Postgres
   postgres-loms:
     image: postgres:15.1
     environment:
@@ -76,11 +83,68 @@ services:
     networks:
       - net
 
-  # notification:
-  #   image: notification
-  #   build: ./notification
-  #   ports:
-  #     - "8082:8082"
-
+  # kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    hostname: zookeeper
+    environment:
+      - ZOOKEEPER_SERVER_ID=1
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+      - ZOOKEEPER_INIT_LIMIT=5
+      - ZOOKEEPER_SYNC_LIMIT=2
+    networks:
+      - net
+  kafka1:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - 29091:29091
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:29091
+    container_name: 'kafka1'
+    depends_on:
+      - zookeeper
+    networks:
+      - net
+  kafka2:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - 29092:29091
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:29091
+    container_name: 'kafka2'
+    depends_on:
+      - zookeeper
+    networks:
+      - net
+  kafka3:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - 29093:29091
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:29091
+    container_name: 'kafka3'
+    depends_on:
+      - zookeeper
+    networks:
+      - net
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8946:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: homework
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:29091,kafka2:29091,kafka3:29091
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    networks:
+      - net
 networks:
   net:

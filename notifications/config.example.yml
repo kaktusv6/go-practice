@@ -1,0 +1,7 @@
+app:
+  port: 50053
+
+brokers:
+  - kafka1:29091
+  - kafka2:29091
+  - kafka3:29091

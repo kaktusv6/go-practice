@@ -93,6 +93,7 @@ func TestCancelOrder(t *testing.T) {
 		orderRepositoryMock          orderRepositoryMock
 		orderItemRepositoryMock      orderItemRepositoryMock
 		orderItemStockRepositoryMock orderItemStockRepositoryMock
+		orderStatusNotifierMock      orderStatusNotifierMock
 	}{
 		{
 			name: "negative case order is cancelled",
@@ -117,6 +118,9 @@ func TestCancelOrder(t *testing.T) {
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
 				return nil
 			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				return nil
+			},
 		},
 		{
 			name: "negative case order is failed",
@@ -139,6 +143,9 @@ func TestCancelOrder(t *testing.T) {
 				return nil
 			},
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
+				return nil
+			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
 				return nil
 			},
 		},
@@ -170,6 +177,9 @@ func TestCancelOrder(t *testing.T) {
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
 				return nil
 			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				return nil
+			},
 		},
 		{
 			name: "positive case without revert stocks",
@@ -198,6 +208,11 @@ func TestCancelOrder(t *testing.T) {
 			},
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
 				return nil
+			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				mock := domainMocks.NewOrderStatusNotifierMock(mc)
+				mock.NotifyMock.Return(nil)
+				return mock
 			},
 		},
 		{
@@ -244,6 +259,11 @@ func TestCancelOrder(t *testing.T) {
 				}
 				return mock
 			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				mock := domainMocks.NewOrderStatusNotifierMock(mc)
+				mock.NotifyMock.Return(nil)
+				return mock
+			},
 		},
 	}
 
@@ -255,6 +275,7 @@ func TestCancelOrder(t *testing.T) {
 				testCase.orderRepositoryMock(mc),
 				testCase.orderItemRepositoryMock(mc),
 				testCase.orderItemStockRepositoryMock(mc),
+				testCase.orderStatusNotifierMock(mc),
 			)
 
 			// Созраняем изначальный статус для переиспользования тестовых заказов

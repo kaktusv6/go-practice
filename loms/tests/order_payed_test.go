@@ -97,6 +97,7 @@ func TestPayedOrder(t *testing.T) {
 		orderRepositoryMock          orderRepositoryMock
 		orderItemRepositoryMock      orderItemRepositoryMock
 		orderItemStockRepositoryMock orderItemStockRepositoryMock
+		orderStatusNotifierMock      orderStatusNotifierMock
 	}{
 		{
 			name: "negative case order is payed",
@@ -119,6 +120,9 @@ func TestPayedOrder(t *testing.T) {
 				return nil
 			},
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
+				return nil
+			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
 				return nil
 			},
 		},
@@ -145,6 +149,9 @@ func TestPayedOrder(t *testing.T) {
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
 				return nil
 			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				return nil
+			},
 		},
 		{
 			name: "negative case order is failed",
@@ -167,6 +174,9 @@ func TestPayedOrder(t *testing.T) {
 				return nil
 			},
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
+				return nil
+			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
 				return nil
 			},
 		},
@@ -200,6 +210,9 @@ func TestPayedOrder(t *testing.T) {
 					Return(nil, getOrderItemStocksError)
 				return mock
 			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				return nil
+			},
 		},
 		{
 			name: "negative case error get stock",
@@ -232,6 +245,9 @@ func TestPayedOrder(t *testing.T) {
 					Expect(ctxTx, orderWithStatusPayed.ID).
 					Return(orderItemStocks, nil)
 				return mock
+			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				return nil
 			},
 		},
 		{
@@ -270,6 +286,9 @@ func TestPayedOrder(t *testing.T) {
 					Expect(ctxTx, orderWithStatusPayed.ID).
 					Return(orderItemStocks, nil)
 				return mock
+			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				return nil
 			},
 		},
 		{
@@ -314,6 +333,9 @@ func TestPayedOrder(t *testing.T) {
 					Return(orderItemStocks, nil)
 				return mock
 			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				return nil
+			},
 		},
 		{
 			name: "positive case",
@@ -357,6 +379,11 @@ func TestPayedOrder(t *testing.T) {
 					Return(orderItemStocks, nil)
 				return mock
 			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				mock := domainMocks.NewOrderStatusNotifierMock(mc)
+				mock.NotifyMock.Return(nil)
+				return mock
+			},
 		},
 	}
 
@@ -368,6 +395,7 @@ func TestPayedOrder(t *testing.T) {
 				testCase.orderRepositoryMock(mc),
 				testCase.orderItemRepositoryMock(mc),
 				testCase.orderItemStockRepositoryMock(mc),
+				testCase.orderStatusNotifierMock(mc),
 			)
 
 			// Созраняем изначальный статус для переиспользования тестовых заказов
