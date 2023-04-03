@@ -2,13 +2,15 @@ package domain
 
 type Cart struct {
 	Items      []*CartItem
-	TotalPrice uint32
+	TotalPrice uint64
 }
 
 func (c *Cart) CalculateTotalPrice() {
-	var result uint32 = 0
+	var result uint64 = 0
 	for _, item := range c.Items {
-		result += item.Product.Price * uint32(item.Count)
+		if item.Product != nil {
+			result += uint64(item.Product.Price) * uint64(item.Count)
+		}
 	}
 	c.TotalPrice = result
 }

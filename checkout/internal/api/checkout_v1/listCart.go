@@ -26,7 +26,7 @@ func (i *Implementation) ListCart(ctx context.Context, userInfo *desc.UserInfo) 
 
 	cartInfo := &desc.CartInfo{
 		Items:      items,
-		TotalPrice: cart.TotalPrice,
+		TotalPrice: uint32(cart.TotalPrice),
 	}
 
 	return cartInfo, nil

@@ -9,7 +9,6 @@ services:
       - 8022:8080
     depends_on:
       - postgres-checkout
-      - loms
     environment:
       - JAEGER_AGENT_HOST=jaeger
     networks:
@@ -163,5 +162,6 @@ services:
       - 9411:9411
     networks:
       - net
+
 networks:
   net:

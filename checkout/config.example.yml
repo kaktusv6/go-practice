@@ -15,3 +15,6 @@ database:
   user: user
   password: password
   name: checkout
+
+metrics:
+  namespace: "hw"

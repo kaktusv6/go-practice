@@ -6,6 +6,7 @@ type Config struct {
 	Loms           Loms           `yaml:"loms"`
 	DataBase       DataBase       `yaml:"database"`
 	Logger         Logger         `yaml:"logger"`
+	Metrics        Metrics        `yaml:"metrics"`
 }
 
 type AppConfig struct {
@@ -33,4 +34,8 @@ type DataBase struct {
 
 type Logger struct {
 	Level string `yml:"level"`
+}
+
+type Metrics struct {
+	Namespace string `yaml:"namespace"`
 }

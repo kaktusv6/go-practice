@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"time"
 )
 
 import (
@@ -20,15 +21,17 @@ import (
 	AppConfig "route256/checkout/internal/config"
 	"route256/checkout/internal/domain"
 	"route256/checkout/internal/repositories"
+	"route256/checkout/internal/repositories/rep_decorators"
 	desc "route256/checkout/pkg/checkout_v1"
 	productServiceV1Clinet "route256/checkout/pkg/product_service_v1"
+	"route256/libs/cache/memory"
+	cacheMetrics "route256/libs/cache/metrics"
 	"route256/libs/config"
+	"route256/libs/db"
+	"route256/libs/db/transaction"
 	"route256/libs/logger"
 	"route256/libs/metrics"
 	"route256/libs/tracing"
-
-	"route256/libs/db"
-	"route256/libs/db/transaction"
 	lomsV1Clinet "route256/loms/pkg/loms_v1"
 )
 
@@ -49,7 +52,8 @@ func main() {
 	}
 	logger.Init(loggerConfig)
 
-	metrics.Init("hw")
+	cacheMetrics.Init(configApp.Metrics.Namespace)
+	metrics.Init(configApp.Metrics.Namespace)
 
 	tracing.Init(configApp.App.Name)
 
@@ -103,6 +107,8 @@ func main() {
 	}
 	defer clientDb.Close()
 
+	cache := memory.NewMemoryCache(int64(time.Minute), time.Minute)
+
 	provider := transaction.NewTransactionManager(clientDb.DB())
 
 	cartItemRepository := repositories.NewOrderItemRepository(provider)
@@ -111,6 +117,8 @@ func main() {
 		productServiceV1Clinet.NewProductServiceClient(productServiceCon),
 		configApp.ProductService.Token,
 	)
+
+	cacheProducts := rep_decorators.NewCacheProducts(productRepository, cache)
 
 	stockRepository := repositories.NewStockRepository(
 		lomsV1Clinet.NewLomsV1Client(lomsCon),
@@ -124,7 +132,7 @@ func main() {
 		orderRepository,
 		provider,
 		cartItemRepository,
-		productRepository,
+		cacheProducts,
 	)
 
 	reflection.Register(server)
