@@ -15,3 +15,5 @@ type orderItemRepositoryMock func(mc *minimock.Controller) domain.OrderItemRepos
 type orderItemStockRepositoryMock func(mc *minimock.Controller) domain.OrderItemStockRepository
 
 type dbMock func(mc *minimock.Controller) db.DB
+
+type orderStatusNotifierMock func(mc *minimock.Controller) domain.OrderStatusNotifier

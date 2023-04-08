@@ -90,6 +90,7 @@ func TestCreateOrder(t *testing.T) {
 		orderRepositoryMock          orderRepositoryMock
 		orderItemRepositoryMock      orderItemRepositoryMock
 		orderItemStockRepositoryMock orderItemStockRepositoryMock
+		orderStatusNotifierMock      orderStatusNotifierMock
 	}{
 		{
 			name: "negative case empty items",
@@ -113,6 +114,9 @@ func TestCreateOrder(t *testing.T) {
 				return nil
 			},
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
+				return nil
+			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
 				return nil
 			},
 		},
@@ -143,6 +147,9 @@ func TestCreateOrder(t *testing.T) {
 				return nil
 			},
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
+				return nil
+			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
 				return nil
 			},
 		},
@@ -177,6 +184,9 @@ func TestCreateOrder(t *testing.T) {
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
 				return nil
 			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				return nil
+			},
 		},
 		{
 			name: "negative case error get stocks",
@@ -209,6 +219,9 @@ func TestCreateOrder(t *testing.T) {
 				return mock
 			},
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
+				return nil
+			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
 				return nil
 			},
 		},
@@ -249,6 +262,9 @@ func TestCreateOrder(t *testing.T) {
 				mock.SaveMock.Return(saveOrderItemStocksError)
 				return mock
 			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				return nil
+			},
 		},
 		{
 			name: "negative case error save orderID",
@@ -288,6 +304,9 @@ func TestCreateOrder(t *testing.T) {
 				mock.SaveMock.Return(nil)
 				return mock
 			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				return nil
+			},
 		},
 		{
 			name: "positive case orderID create with status failed",
@@ -325,6 +344,11 @@ func TestCreateOrder(t *testing.T) {
 			orderItemStockRepositoryMock: func(mc *minimock.Controller) domain.OrderItemStockRepository {
 				mock := domainMocks.NewOrderItemStockRepositoryMock(mc)
 				mock.SaveMock.Return(nil)
+				return mock
+			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				mock := domainMocks.NewOrderStatusNotifierMock(mc)
+				mock.NotifyMock.Return(nil)
 				return mock
 			},
 		},
@@ -366,6 +390,11 @@ func TestCreateOrder(t *testing.T) {
 				mock.SaveMock.Return(nil)
 				return mock
 			},
+			orderStatusNotifierMock: func(mc *minimock.Controller) domain.OrderStatusNotifier {
+				mock := domainMocks.NewOrderStatusNotifierMock(mc)
+				mock.NotifyMock.Return(nil)
+				return mock
+			},
 		},
 	}
 
@@ -377,6 +406,7 @@ func TestCreateOrder(t *testing.T) {
 				testCase.orderRepositoryMock(mc),
 				testCase.orderItemRepositoryMock(mc),
 				testCase.orderItemStockRepositoryMock(mc),
+				testCase.orderStatusNotifierMock(mc),
 			)
 
 			res, err := d.CreateOrder(ctx, testCase.args.order)

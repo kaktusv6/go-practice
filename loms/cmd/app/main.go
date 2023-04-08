@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"route256/loms/internal/client/kafka"
+	"route256/loms/internal/producers"
 )
 
 import (
@@ -55,8 +57,10 @@ func main() {
 	}
 	defer clientDb.Close()
 
+	// TransactionManager
 	transactionManager := transaction.NewTransactionManager(clientDb.DB())
 
+	// Repositories
 	stockRepository := repositories.NewStockRepository(
 		transactionManager,
 	)
@@ -70,6 +74,13 @@ func main() {
 		transactionManager,
 	)
 
+	// Producers
+	producer, err := kafka.NewSyncProducer(configApp.Brokers)
+	if err != nil {
+		log.Fatal(err)
+	}
+	orderStatusNotifier := producers.NewOrderStatusNotifier(producer, "order_statuses")
+
 	// Create domain
 	domain := domain.NewDomain(
 		transactionManager,
@@ -77,6 +88,7 @@ func main() {
 		orderRepository,
 		orderItemRepository,
 		orderItemStockRepository,
+		orderStatusNotifier,
 	)
 
 	// CRON

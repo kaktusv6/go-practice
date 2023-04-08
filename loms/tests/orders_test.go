@@ -110,6 +110,7 @@ func TestOrders(t *testing.T) {
 				testCase.orderRepositoryMock(mc),
 				testCase.orderItemRepositoryMock(mc),
 				testCase.orderItemStockRepositoryMock(mc),
+				nil,
 			)
 
 			res, err := d.GetAll(ctx)

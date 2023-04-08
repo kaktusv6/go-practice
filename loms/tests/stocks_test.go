@@ -102,6 +102,7 @@ func TestStocks(t *testing.T) {
 				testCase.orderRepositoryMock(mc),
 				testCase.orderItemRepositoryMock(mc),
 				testCase.orderItemStockRepositoryMock(mc),
+				nil,
 			)
 
 			res, err := d.GetStocksBySKU(ctx, sku)

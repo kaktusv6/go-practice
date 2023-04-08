@@ -4,6 +4,7 @@ type Config struct {
 	App            AppConfig      `yaml:"app"`
 	ProductService ProductService `yaml:"product_service"`
 	DataBase       DataBase       `yaml:"database"`
+	Brokers        []string       `yaml:"brokers"`
 }
 
 type AppConfig struct {

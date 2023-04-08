@@ -59,6 +59,11 @@ func (d *domain) CreateOrder(ctx context.Context, order *Order) (int64, error) {
 		return 0, err
 	}
 
+	err = d.orderStatusNotifier.Notify(order)
+	if err != nil {
+		return 0, err
+	}
+
 	return order.ID, nil
 }
 

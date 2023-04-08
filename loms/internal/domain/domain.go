@@ -13,6 +13,7 @@ type Domain interface {
 	CancelOrder(ctx context.Context, order *Order) error
 	GetAll(ctx context.Context) ([]*Order, error)
 	FailOrder(ctx context.Context, order *Order) error
+	NotifyOrderStatus(ctx context.Context, order *Order) error
 }
 
 const (
@@ -29,6 +30,7 @@ type domain struct {
 	orderRepository          OrderRepository
 	orderItemRepository      OrderItemRepository
 	orderItemStockRepository OrderItemStockRepository
+	orderStatusNotifier      OrderStatusNotifier
 }
 
 func NewDomain(
@@ -37,6 +39,7 @@ func NewDomain(
 	orderRepository OrderRepository,
 	orderItemRepository OrderItemRepository,
 	orderItemStockRepository OrderItemStockRepository,
+	orderStatusNotifier OrderStatusNotifier,
 ) Domain {
 	return &domain{
 		manager:                  manager,
@@ -44,5 +47,6 @@ func NewDomain(
 		orderRepository:          orderRepository,
 		orderItemRepository:      orderItemRepository,
 		orderItemStockRepository: orderItemStockRepository,
+		orderStatusNotifier:      orderStatusNotifier,
 	}
 }

@@ -2,7 +2,11 @@ package domain
 
 import "context"
 
-//go:generate bash -c "rm -rf mocks && mkdir -p mocks"
+//go:generate bash -c "mkdir -p mocks"
+//go:generate bash -c "rm -rf ./mocks/order_item_repository_minimock.go"
+//go:generate bash -c "rm -rf ./mocks/order_item_stock_repository_minimock.go"
+//go:generate bash -c "rm -rf ./mocks/order_repository_minimock.go"
+//go:generate bash -c "rm -rf ./mocks/stock_repository_minimock.go"
 //go:generate minimock -i StockRepository -o ./mocks/ -s "_minimock.go"
 //go:generate minimock -i OrderRepository -o ./mocks/ -s "_minimock.go"
 //go:generate minimock -i OrderItemRepository -o ./mocks/ -s "_minimock.go"
