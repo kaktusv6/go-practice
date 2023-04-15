@@ -4,9 +4,15 @@ import (
 	"context"
 	"log"
 	"net"
+	"net/http"
 )
 
 import (
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -17,6 +23,9 @@ import (
 	desc "route256/checkout/pkg/checkout_v1"
 	productServiceV1Clinet "route256/checkout/pkg/product_service_v1"
 	"route256/libs/config"
+	"route256/libs/logger"
+	"route256/libs/metrics"
+	"route256/libs/tracing"
 
 	"route256/libs/db"
 	"route256/libs/db/transaction"
@@ -34,22 +43,48 @@ func main() {
 		log.Fatal("config init", err)
 	}
 
+	loggerConfig := logger.Config{
+		Level: configApp.Logger.Level,
+		Env:   configApp.App.Environment,
+	}
+	logger.Init(loggerConfig)
+
+	metrics.Init("hw")
+
+	tracing.Init(configApp.App.Name)
+
 	lis, err := net.Listen("tcp", ":"+configApp.App.Port)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		logger.Fatal("failed to listen", zap.Error(err))
+		panic(err)
 	}
 
-	server := grpc.NewServer()
+	server := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			metrics.Metrics,
+			tracing.Tracer,
+		),
+	)
 
-	lomsCon, err := grpc.Dial(configApp.Loms.Url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	lomsCon, err := grpc.Dial(
+		configApp.Loms.Url,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer())),
+	)
 	if err != nil {
-		log.Fatal("Error create connection to loms", err)
+		logger.Fatal("Error create connection to loms", zap.Error(err))
+		panic(err)
 	}
 	defer lomsCon.Close()
 
-	productServiceCon, err := grpc.Dial(configApp.ProductService.Url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	productServiceCon, err := grpc.Dial(
+		configApp.ProductService.Url,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer())),
+	)
 	if err != nil {
-		log.Fatal("Error create connection to productService", err)
+		logger.Fatal("Error create connection to productService", zap.Error(err))
+		panic(err)
 	}
 	defer productServiceCon.Close()
 
@@ -95,9 +130,19 @@ func main() {
 	reflection.Register(server)
 	desc.RegisterCheckoutV1Server(server, checkoutV1.New(domain))
 
-	log.Printf("server listening at %v", lis.Addr())
+	logger.Info("server listening at", zap.Any("address", lis.Addr()))
+
+	grpc_prometheus.Register(server)
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		errMetrics := http.ListenAndServe(":8080", nil)
+		logger.Fatal("Error list metrics", zap.Error(errMetrics))
+		panic(errMetrics)
+	}()
 
 	if err = server.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		logger.Fatal("failed to serve", zap.Error(err))
+		panic(err)
 	}
 }

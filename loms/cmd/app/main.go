@@ -2,23 +2,29 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
-	"route256/loms/internal/client/kafka"
-	"route256/loms/internal/producers"
+	"net/http"
 )
 
 import (
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"route256/libs/config"
 	"route256/libs/db"
 	"route256/libs/db/transaction"
+	"route256/libs/logger"
+	"route256/libs/metrics"
+	"route256/libs/tracing"
 	"route256/loms/internal/api/lomsV1"
+	"route256/loms/internal/client/kafka"
 	AppConfig "route256/loms/internal/config"
 	"route256/loms/internal/domain"
+	"route256/loms/internal/producers"
 	"route256/loms/internal/repositories"
 	"route256/loms/internal/scheduler/cron/jobs"
 	desc "route256/loms/pkg/loms_v1"
@@ -28,19 +34,22 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type Logger struct{}
-
-func (l *Logger) Printf(msg string, args ...interface{}) {
-	fmt.Printf(msg, args...)
-	fmt.Println()
-}
-
 func main() {
 	configApp := &AppConfig.Config{}
 	err := config.Init("config.yml", configApp)
 	if err != nil {
 		log.Fatal("config init", err)
 	}
+
+	loggerConfig := logger.Config{
+		Level: configApp.Logger.Level,
+		Env:   configApp.App.Environment,
+	}
+	logger.Init(loggerConfig)
+
+	metrics.Init("hw")
+
+	tracing.Init(configApp.App.Name)
 
 	ctx := context.Background()
 
@@ -53,7 +62,8 @@ func main() {
 		Name:     configApp.DataBase.Name,
 	})
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err.Error())
+		panic(err)
 	}
 	defer clientDb.Close()
 
@@ -77,7 +87,8 @@ func main() {
 	// Producers
 	producer, err := kafka.NewSyncProducer(configApp.Brokers)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err.Error())
+		panic(err)
 	}
 	orderStatusNotifier := producers.NewOrderStatusNotifier(producer, "order_statuses")
 
@@ -92,30 +103,44 @@ func main() {
 	)
 
 	// CRON
-	logger := cron.VerbosePrintfLogger(&Logger{})
-	c := cron.New(
-		cron.WithLogger(logger),
-	)
+	c := cron.New()
 	defer c.Stop()
 
-	c.AddJob("* * * * *", jobs.NewOrdersChecker(domain, logger))
+	c.AddJob("* * * * *", jobs.NewOrdersChecker(domain))
 	c.Start()
 
 	// Create tcp listener
 	lis, err := net.Listen("tcp", ":"+configApp.App.Port)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		logger.Fatal(err.Error())
+		panic(err)
 	}
 
-	server := grpc.NewServer()
+	server := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			metrics.Metrics,
+			tracing.Tracer,
+		),
+	)
 
 	reflection.Register(server)
+
 	desc.RegisterLomsV1Server(server, lomsV1.NewLomsV1(domain))
 
-	log.Printf("server listening at %v", lis.Addr())
+	logger.Info("server listening at", zap.String("address", lis.Addr().String()))
+
+	grpc_prometheus.Register(server)
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		errMetrics := http.ListenAndServe(":8080", nil)
+		logger.Fatal("Error list metrics", zap.Error(errMetrics))
+		panic(errMetrics)
+	}()
 
 	// Run server
 	if err = server.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		logger.Fatal("failed to serve: ", zap.Error(err))
+		panic(err)
 	}
 }

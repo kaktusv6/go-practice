@@ -6,7 +6,8 @@ import (
 )
 
 import (
-	"github.com/robfig/cron/v3"
+	"go.uber.org/zap"
+	"route256/libs/logger"
 	"route256/libs/pool/batch"
 	"route256/loms/internal/domain"
 )
@@ -14,30 +15,27 @@ import (
 // OrdersChecker CRON для проверки заказоы
 type OrdersChecker struct {
 	domain domain.Domain
-	logger cron.Logger
 }
 
 func NewOrdersChecker(
 	domain domain.Domain,
-	logger cron.Logger,
 ) *OrdersChecker {
 	return &OrdersChecker{
 		domain: domain,
-		logger: logger,
 	}
 }
 
 func (o *OrdersChecker) Run() {
 	ctx := context.Background()
 
-	o.logger.Info("Get orders")
+	logger.Info("Get orders")
 
 	orders, err := o.domain.GetAll(ctx)
 	if err != nil {
-		o.logger.Error(err, "Error get orders")
+		logger.Error("Error get orders", zap.Error(err))
 		return
 	}
-	o.logger.Info("Get orders count", "count", len(orders))
+	logger.Info("Get orders count", zap.Int("count", len(orders)))
 
 	now := time.Now()
 
@@ -46,16 +44,16 @@ func (o *OrdersChecker) Run() {
 	for _, order := range orders {
 		tasks = append(tasks, batch.Task[*domain.Order, *domain.Order]{
 			Callback: func(order *domain.Order) *domain.Order {
-				o.logger.Info("Start checking for time payment", "orderId", order.ID)
+				logger.Info("Start checking for time payment", zap.Int64("orderId", order.ID))
 				isOrderStatusValid := order.Status == domain.AwaitingPayment
 				isOrderCreatedAtValid := now.Sub(order.UpdatedAt) >= (10 * time.Minute)
 
 				if isOrderStatusValid && isOrderCreatedAtValid {
 					err = o.domain.FailOrder(ctx, order)
 					if err != nil {
-						o.logger.Error(err, "Error fail order", "orderId", order.ID)
+						logger.Error("Error fail order", zap.Error(err), zap.Int64("orderId", order.ID))
 					} else {
-						o.logger.Info("Order mark as fail", "orderId", order.ID)
+						logger.Info("Order mark as fail", zap.Int64("orderId", order.ID))
 					}
 				}
 

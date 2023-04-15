@@ -1,7 +1,11 @@
 app:
   port: 50053
+  env: dev
 
 brokers:
   - kafka1:29091
   - kafka2:29091
   - kafka3:29091
+
+logger:
+  level: debug
