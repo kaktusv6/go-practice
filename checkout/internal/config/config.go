@@ -5,10 +5,13 @@ type Config struct {
 	ProductService ProductService `yaml:"product_service"`
 	Loms           Loms           `yaml:"loms"`
 	DataBase       DataBase       `yaml:"database"`
+	Logger         Logger         `yaml:"logger"`
 }
 
 type AppConfig struct {
-	Port string `yaml:"port"`
+	Name        string `yaml:"name"`
+	Environment string `yaml:"env"`
+	Port        string `yaml:"port"`
 }
 
 type ProductService struct {
@@ -26,4 +29,8 @@ type DataBase struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	Name     string `yaml:"name"`
+}
+
+type Logger struct {
+	Level string `yml:"level"`
 }

@@ -2,8 +2,13 @@ package receivers
 
 import (
 	"encoding/json"
+	"fmt"
+)
+
+import (
 	"github.com/Shopify/sarama"
-	"log"
+	"go.uber.org/zap"
+	"route256/libs/logger"
 )
 
 var orderStatusHandler ConsumerHandlerFunc = func(msg *sarama.ConsumerMessage) error {
@@ -13,7 +18,12 @@ var orderStatusHandler ConsumerHandlerFunc = func(msg *sarama.ConsumerMessage) e
 		return err
 	}
 
-	log.Printf("Notification of order # %d: Order status has been changed to %s", orderStatusNotification.OrderID, orderStatusNotification.Status)
+	logger.Info("Notification of order # "+
+		fmt.Sprint(orderStatusNotification.OrderID)+
+		": Order status has been changed to "+
+		orderStatusNotification.Status,
+		zap.Any("msg", msg),
+	)
 
 	return nil
 }

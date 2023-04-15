@@ -1,4 +1,5 @@
 app:
+  name: checkout
   port: 50051
 
 product_service:
